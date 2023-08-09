@@ -1,14 +1,14 @@
 {
+  "$schema": "https://json.schemastore.org/chrome-manifest",
   "name": "easy google form code helper",
   "description": "A code writing helper for @hymns-of-web/useEasyGoogleForm hook. It scrapes your pre-filled google form.",
   "version": "0.1.0",
-  "manifest_version": 2,
-  "background": {
-    "scripts": ["./back-end/index.js"]
-  },
-  "options_page": "./options.html",
-  "browser_action": {
-    "default_popup": "popup.html"
-  },
-  "permissions": ["tabs", "[https://www.google.com/*](https://www.google.com/*)", "storage"]
+  "manifest_version": 3,
+  "content_scripts": [
+    {
+      "matches": ["https://docs.google.com/forms/*"],
+      "js": ["../back-end/index.js"],
+      "run_at": "document_end"
+    }
+  ]
 }

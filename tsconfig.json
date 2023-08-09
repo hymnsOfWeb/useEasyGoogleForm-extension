@@ -1,12 +1,14 @@
 {
   "$schema": "http://json.schemastore.org/tsconfig",
+  "exclude": ["node_modules"],
+  "include": ["src/back-end/index.ts"],
   "compilerOptions": {
+    "baseUrl": ".",
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "es6",
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "dist"
-  },
-  "lib": ["es6"]
+    "outDir": "src/back-end"
+  }
 }
