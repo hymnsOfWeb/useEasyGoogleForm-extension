@@ -2,16 +2,20 @@
   "name": "gform-extension",
   "version": "1.0.0",
   "description": "",
+  "main": "src/base/index.js",
   "type": "module",
   "scripts": {
     "keygen": "crx keygen src/key",
-    "a": "rollup -c"
+    "build:scripts": "rollup -c",
+    "build:crx": "crx pack src/base -o dist/gform-extension.crx -p src/key/key.pem"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "@rollup/plugin-commonjs": "^25.0.3",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "@rollup/plugin-terser": "^0.4.3",
     "@rollup/plugin-typescript": "^11.1.2",
     "crx": "^5.0.1",
     "htmlparser2": "^9.0.0",

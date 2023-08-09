@@ -7,7 +7,7 @@
   "content_scripts": [
     {
       "matches": ["https://docs.google.com/forms/*"],
-      "js": ["../back-end/index.js"],
+      "js": ["./index.js"],
       "run_at": "document_end"
     }
   ]
