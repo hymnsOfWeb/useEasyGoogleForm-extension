@@ -169,7 +169,7 @@ ${tabs(3)}},\n`;
 
   for (let i = 0; i < entries.length; i++) {
     if (entries[i].type === "text") {
-      finalString += `${tabs(3)}<label for="${ids[i]}">${entries[i].values[0].text}</label>\n`;
+      finalString += `${tabs(3)}<label htmlFor="${ids[i]}">${entries[i].values[0].text}</label>\n`;
       finalString += `${tabs(3)}<input type="text" id="${ids[i]}" />\n`;
     }
     if (entries[i].type === "radio") {
@@ -179,12 +179,12 @@ ${tabs(3)}},\n`;
         finalString += `${tabs(4)}<input type="radio" name="${ids[i]}" id="${newId}" value="${
           entries[i].values[j].value
         }" />\n`;
-        finalString += `${tabs(4)}<label for="${newId}">${entries[i].values[j].text}</label>\n`;
+        finalString += `${tabs(4)}<label htmlFor="${newId}">${entries[i].values[j].text}</label>\n`;
       }
       finalString += `${tabs(3)}</div>\n`;
     }
     if (entries[i].type === "textarea") {
-      finalString += `${tabs(3)}<label for="${ids[i]}"/>\n`;
+      finalString += `${tabs(3)}<label htmlFor="${ids[i]}"/>\n`;
       finalString += `${tabs(3)}<textarea id="${ids[i]}"/>\n`;
     }
   }
