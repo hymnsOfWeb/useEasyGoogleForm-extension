@@ -7,7 +7,8 @@
   "scripts": {
     "keygen": "crx keygen src/key",
     "build:scripts": "rollup -c",
-    "build:crx": "crx pack src/base -o dist/gform-extension.crx -p src/key/key.pem"
+    "build:crx": "crx pack src/base -o dist/gform-extension.crx -p src/key/key.pem",
+    "build": "npm run build:scripts"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,7 @@
     "@rollup/plugin-typescript": "^11.1.2",
     "crx": "^5.0.1",
     "htmlparser2": "^9.0.0",
+    "nanoid": "^3.3.6",
     "rollup": "^3.28.0",
     "tslib": "^2.6.1",
     "typescript": "^5.1.6"
@@ -26,5 +28,9 @@
   "browserslist": [
     ">0.2%",
     "not dead"
-  ]
+  ],
+  "devDependencies": {
+    "@types/node": "^20.4.10",
+    "domutils": "^3.1.0"
+  }
 }

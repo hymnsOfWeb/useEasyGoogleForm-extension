@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/chrome-manifest",
   "name": "easy google form code helper",
   "description": "A code writing helper for @hymns-of-web/useEasyGoogleForm hook. It scrapes your pre-filled google form.",
   "version": "0.1.0",
