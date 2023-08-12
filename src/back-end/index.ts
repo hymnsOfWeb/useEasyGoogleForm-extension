@@ -1,4 +1,4 @@
-import { findAll, findOne } from "domutils";
+import { find, findAll, findOne } from "domutils";
 import { Parser, DomHandler } from "htmlparser2";
 import { customAlphabet } from "nanoid/non-secure";
 
@@ -37,7 +37,11 @@ const parserer = async (html: string) => {
         return commonBool(elem) && elem.attribs?.type === "text";
       }, dom);
       textInputs.forEach((textInput) => {
-        entries.push({ type: "text", entry: (textInput.attribs.name ?? "").replace("entry.", "") });
+        entries.push({
+          type: "text",
+          entry: (textInput.attribs.name ?? "").replace("entry.", ""),
+          values: [{ text: textInput.attribs["aria-label"] ?? "", value: "" }]
+        });
       });
       const readioInputs = findAll((elem) => {
         return commonBool(elem) && elem.attribs?.type === "hidden";
@@ -165,7 +169,7 @@ ${tabs(3)}},\n`;
 
   for (let i = 0; i < entries.length; i++) {
     if (entries[i].type === "text") {
-      finalString += `${tabs(3)}<label for="${ids[i]}"/>\n`;
+      finalString += `${tabs(3)}<label for="${ids[i]}">${entries[i].values[0].text}</label>\n`;
       finalString += `${tabs(3)}<input type="text" id="${ids[i]}" />\n`;
     }
     if (entries[i].type === "radio") {
