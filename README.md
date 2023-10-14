@@ -24,7 +24,7 @@ You should see a new react component created for your google form. You can copy 
 
 
 ### Disclaimer !
-The extension ( and the react hook as well ) are only capable of Short answer, paragraph and multiple choice questions in google forms at the moment. Other types coming soon.
+This extension ( and the react hook as well ) doesn't support File Upload, Scale and Grid ( YET ).
 
 _Compatible Browsers_: Chromium based browsers ( Chrome, Edge, Brave, etc. )
 
