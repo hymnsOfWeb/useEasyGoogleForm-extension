@@ -401,6 +401,7 @@ ${tabs(3)}},\n`;
     if (entries[i].type === "date") {
       finalString += `${tabs(3)}<div id="${ids[i]}">\n`;
       finalString += `${tabs(4)}<span>${entries[i].question}</span>\n`;
+      finalString += `${tabs(4)}<span>Month starting from index 1 (e.g. March will be 3)</span>\n`;
       for (let j = 0; j < entries[i].dateParts?.length; j++) {
         const newId = nanoId(5);
         finalString += `${tabs(4)}<label htmlFor="${newId}">${entries[i].dateParts[j]}</label>\n`;
@@ -411,10 +412,11 @@ ${tabs(3)}},\n`;
     if (entries[i].type === "time") {
       finalString += `${tabs(3)}<div id="${ids[i]}">\n`;
       finalString += `${tabs(4)}<span>${entries[i].question}</span>\n`;
+      finalString += `${tabs(4)}<span>Please use 24 Hour Format</span>\n`;
       for (let j = 0; j < entries[i].timeParts?.length; j++) {
         const newId = nanoId(5);
         finalString += `${tabs(4)}<label htmlFor="${newId}">${entries[i].timeParts[j]}</label>\n`;
-        finalString += `${tabs(4)}<input type="number" name="${ids[i]}" id="${newId}" />\n`;
+        finalString += `${tabs(4)}<input type="number" name="${entries[i].timeParts[j]}" id="${newId}" />\n`;
       }
       finalString += `${tabs(3)}</div>\n`;
     }
