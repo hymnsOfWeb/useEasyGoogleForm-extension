@@ -383,8 +383,7 @@ ${tabs(3)}},\n`;
       finalString += `${tabs(3)}<label htmlFor="${ids[i]}">\n`;
       finalString += `${tabs(4)}${entries[i].question}\n`;
       finalString += `${tabs(3)}</label>\n`;
-      finalString += `${tabs(3)}<textarea id="${ids[i]}">\n`;
-      finalString += `${tabs(3)}</textarea>\n`;
+      finalString += `${tabs(3)}<textarea id="${ids[i]}"/>\n`;
     }
     if (entries[i].type === "checkbox") {
       finalString += `${tabs(3)}<div id="${ids[i]}">\n`;
