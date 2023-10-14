@@ -1,14 +1,16 @@
-import { find, findAll, findOne } from "domutils";
+import { findAll, findOne } from "domutils";
 import { Parser, DomHandler } from "htmlparser2";
 import { customAlphabet } from "nanoid/non-secure";
+// import { myHTML } from "./html";
+import { Element as DOMHandlerElement } from "domhandler";
 
 interface EntryType {
-  type: "text" | "radio" | "textarea";
+  type: "text" | "radio" | "textarea" | "checkbox" | "date" | "dropdown" | "time";
   entry: string;
-  values?: {
-    text: string;
-    value: string;
-  }[];
+  question?: string;
+  values?: { text: string; value: string }[];
+  dateParts?: ("year" | "month" | "day")[];
+  timeParts?: ("hour" | "minute" | "second")[];
 }
 
 const fetcherFunc = async (url: string) => {
@@ -17,102 +19,295 @@ const fetcherFunc = async (url: string) => {
   return text;
 };
 
+enum jsControllers {
+  TEXT = "rDGJeb",
+  MULTIPLE_SELECT = "hIYTQc",
+  SINGLE_SELECT = "pkFYWb",
+  DATE = "qDmeqc",
+  TIME = "D7fEsb",
+  LINEAR_SCALE = "snI0Yd",
+  DROPDOWN = "jmDACb"
+}
+const nameAttribRegex = /entry\.\d+/gm;
+
+type EntryFromNode = (node: DOMHandlerElement) => EntryType | null;
+const getQuestion = (node: DOMHandlerElement): string => {
+  const spanElem = findOne((elem) => {
+    return elem?.name === "span";
+  }, node?.childNodes);
+  const question = ((spanElem?.childNodes[0] as any)?.data as string) ?? "";
+  return question;
+};
+const getInputElem = (node: DOMHandlerElement): DOMHandlerElement | null => {
+  const textInputElem = findOne((elem) => {
+    return (
+      ((elem?.name === "input" && elem.attribs?.type === "text") || elem?.name === "textarea") &&
+      nameAttribRegex.test(elem.attribs?.name)
+    );
+  }, node?.childNodes);
+  if (textInputElem) {
+    return textInputElem;
+  }
+  const inputElem = findOne((elem) => {
+    return elem?.name === "input" && elem.attribs?.type === "hidden";
+  }, node?.childNodes);
+  if (inputElem) {
+    return inputElem;
+  }
+  return null;
+};
+const getInputElems = (node: DOMHandlerElement): DOMHandlerElement[] | null => {
+  const inputElems = findAll((elem) => {
+    return elem?.name === "input" && elem.attribs?.type === "hidden";
+  }, node?.childNodes);
+  if (!inputElems) return null;
+  return inputElems;
+};
+const getData = (node: DOMHandlerElement, multiInputElems = false) => {
+  const forReturn: { question: string; inputElem?: DOMHandlerElement | null; inputElems?: DOMHandlerElement[] | null } =
+    {} as any;
+  forReturn.question = getQuestion(node);
+  if (multiInputElems) {
+    forReturn.inputElems = getInputElems(node);
+  } else {
+    forReturn.inputElem = getInputElem(node);
+  }
+  return forReturn;
+};
+const getTextEntryFromNode: EntryFromNode = (node) => {
+  try {
+    const { inputElem } = getData(node);
+    const textAreaElem = findOne((elem) => {
+      return elem?.name === "textarea" && nameAttribRegex.test(elem.attribs?.name);
+    }, node?.childNodes);
+    if (inputElem) {
+      return {
+        type: "text",
+        entry: inputElem?.attribs?.name ?? "",
+        question: inputElem?.attribs["aria-label"] ?? ""
+      };
+    }
+    if (textAreaElem) {
+      return {
+        type: "textarea",
+        entry: textAreaElem?.attribs?.name ?? "",
+        question: textAreaElem?.attribs["aria-label"] ?? ""
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+const getSingleSelectEntryFromNode: EntryFromNode = (node) => {
+  try {
+    const { inputElem, question } = getData(node);
+    const nameEntry = inputElem?.attribs?.name ?? "";
+    const allLabels = findAll((elem) => {
+      return elem?.name === "label" && elem.attribs?.class?.includes?.("docssharedWizToggleLabeledContainer");
+    }, node?.childNodes);
+    const values: EntryType["values"] = [];
+    for (const label of allLabels) {
+      const forAttrib = label.attribs?.for;
+      const elem = findOne((elem) => {
+        return elem?.name === "div" && elem.attribs?.id === forAttrib;
+      }, label?.childNodes);
+      values.push({
+        text: elem?.attribs["aria-label"] ?? "",
+        value: elem?.attribs["data-value"] ?? elem?.attribs["aria-label"] ?? ""
+      });
+    }
+    return {
+      type: "radio",
+      entry: nameEntry,
+      question: question,
+      values: values
+    };
+  } catch {
+    return null;
+  }
+};
+const getMultiSelectEntryFromNode: EntryFromNode = (node) => {
+  try {
+    const { inputElem, question } = getData(node);
+    const nameEntry = (inputElem?.attribs?.name ?? "")?.replace(/_sentinel/gm, "");
+    const allLabels = findAll((elem) => {
+      return elem?.name === "label" && elem.attribs?.class?.includes?.("docssharedWizToggleLabeledContainer");
+    }, node?.childNodes);
+    const values: EntryType["values"] = [];
+    for (const label of allLabels) {
+      const forAttrib = label.attribs?.for;
+      const elem = findOne((elem) => {
+        return elem?.name === "div" && elem.attribs?.id === forAttrib;
+      }, label?.childNodes);
+      values.push({
+        text: elem?.attribs["aria-label"] ?? "",
+        value: elem?.attribs["data-value"] ?? elem?.attribs["aria-label"] ?? ""
+      });
+    }
+    return {
+      type: "checkbox",
+      entry: nameEntry,
+      question: question,
+      values: values
+    };
+  } catch {
+    return null;
+  }
+};
+const getDateEntryFromNode: EntryFromNode = (node) => {
+  try {
+    const { inputElems, question } = getData(node, true);
+    const dateParts = [];
+    let entry = "";
+    for (const inputElem of inputElems) {
+      const nameEntry = inputElem?.attribs?.name ?? "";
+      if (nameEntry.includes("year")) {
+        dateParts.push("year");
+        entry = nameEntry.replace(/_year/gm, "");
+      }
+      if (nameEntry.includes("month")) {
+        dateParts.push("month");
+        entry = nameEntry.replace(/_month/gm, "");
+      }
+      if (nameEntry.includes("day")) {
+        dateParts.push("day");
+        entry = nameEntry.replace(/_day/gm, "");
+      }
+    }
+    return {
+      type: "date",
+      entry,
+      question,
+      dateParts: Array.from(new Set(dateParts))
+    };
+  } catch {
+    return null;
+  }
+};
+const getTimeEntryFromNode: EntryFromNode = (node) => {
+  try {
+    const { inputElems, question } = getData(node, true);
+    let entry = "";
+    const timeParts = [];
+    for (const inputElem of inputElems) {
+      const nameEntry = inputElem?.attribs?.name ?? "";
+      if (nameEntry.includes("hour")) {
+        entry = nameEntry.replace(/_hour/gm, "");
+        timeParts.push("hour");
+      }
+      if (nameEntry.includes("minute")) {
+        entry = nameEntry.replace(/_minute/gm, "");
+        timeParts.push("minute");
+      }
+      if (nameEntry.includes("second")) {
+        entry = nameEntry.replace(/_second/gm, "");
+        timeParts.push("second");
+      }
+    }
+    return {
+      type: "time",
+      entry: entry,
+      question: question,
+      timeParts: Array.from(new Set(timeParts))
+    };
+  } catch {
+    return null;
+  }
+};
+const getDropdownEntryFromNode: EntryFromNode = (node) => {
+  try {
+    const { inputElem, question } = getData(node);
+    const entry = inputElem.attribs.name;
+    const values: EntryType["values"] = [];
+    const optionDivs = findAll((elem) => {
+      return (
+        elem?.name === "div" &&
+        elem?.attribs?.role === "option" &&
+        elem?.attribs["data-value"] !== undefined &&
+        elem?.attribs["data-value"] !== ""
+      );
+    }, node?.childNodes);
+    for (const optionDiv of optionDivs) {
+      const spanElem = findOne((elem) => {
+        return elem?.name === "span";
+      }, optionDiv?.childNodes);
+      values.push({
+        text: (spanElem?.childNodes[0] as any)?.data ?? "",
+        value: optionDiv?.attribs["data-value"] ?? ""
+      });
+    }
+    return {
+      type: "dropdown",
+      entry: entry,
+      question: question,
+      values: values
+    };
+  } catch {
+    return null;
+  }
+};
+
 const parserer = async (html: string) => {
   const entries: EntryType[] = [];
-  const commonBool = (elem: any, forTextArea: boolean = false): boolean => {
-    try {
-      const result = forTextArea
-        ? elem.name === "textarea" && ((elem.attribs?.name as string) ?? "").includes("entry.")
-        : elem.name === "input" && ((elem.attribs?.name as string) ?? "").includes("entry.");
-      return result;
-    } catch {
-      return false;
-    }
-  };
   const handler = new DomHandler((error, dom) => {
     if (error) {
       console.log("parsing error");
     } else {
-      const textInputs = findAll((elem) => {
-        return commonBool(elem) && elem.attribs?.type === "text";
+      const questionContainers = findAll((elem) => {
+        return elem?.name === "div" && elem?.attribs?.class === "Qr7Oae" && elem.attribs.role === "listitem";
       }, dom);
-      textInputs.forEach((textInput) => {
-        entries.push({
-          type: "text",
-          entry: (textInput.attribs.name ?? "").replace("entry.", ""),
-          values: [{ text: textInput.attribs["aria-label"] ?? "", value: "" }]
-        });
-      });
-      const readioInputs = findAll((elem) => {
-        return commonBool(elem) && elem.attribs?.type === "hidden";
-      }, dom as any);
-      readioInputs.forEach((radioInput) => {
-        const jsName = radioInput.attribs["jsname"];
-        if (jsName) {
-          const values: EntryType["values"] = [];
-          const labels = findAll((elem) => {
-            if (elem.name === "label" && elem.attribs["class"]?.includes("docssharedWizToggleLabeledContainer")) {
-              return true;
-            } else {
-              return false;
+      for (const questionContainer of questionContainers) {
+        const childDiv = findOne((elem) => {
+          return elem?.name === "div";
+        }, questionContainer.childNodes);
+        const jscontroller = childDiv?.attribs?.jscontroller;
+        let entry: EntryType | null = null;
+        switch (jscontroller) {
+          case jsControllers.TEXT:
+            entry = getTextEntryFromNode(childDiv);
+            if (entry) {
+              entries.push(entry);
             }
-          }, dom);
-          labels.forEach((label) => {
-            const id = label.attribs["for"] ?? "//////";
-            const valueDiv = findOne(
-              (elem) => {
-                if (elem.attribs["id"]?.includes(id)) {
-                  return true;
-                } else {
-                  return false;
-                }
-              },
-              dom,
-              true
-            );
-            const textSpan = findOne(
-              (elem) => {
-                const parentDiv = findOne(
-                  (elem) => {
-                    if (elem.name === "div" && elem.attribs["class"]?.includes("ulDsOb")) {
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  },
-                  dom,
-                  true
-                );
-                if (elem.name === "span" && elem.parentNode === parentDiv) {
-                  return true;
-                } else {
-                  return false;
-                }
-              },
-              dom,
-              true
-            );
-            const value: EntryType["values"][0] = {
-              text: (textSpan?.children[0] as any).data ?? "",
-              value: valueDiv?.attribs["data-value"] ?? ""
-            };
-            values.push(value);
-          });
-          entries.push({ type: "radio", entry: (radioInput.attribs.name ?? "").replace("entry.", ""), values });
+            break;
+          case jsControllers.SINGLE_SELECT:
+            entry = getSingleSelectEntryFromNode(childDiv);
+            if (entry) {
+              entries.push(entry);
+            }
+            break;
+          case jsControllers.MULTIPLE_SELECT:
+            entry = getMultiSelectEntryFromNode(childDiv);
+            if (entry) {
+              entries.push(entry);
+            }
+            break;
+          case jsControllers.DATE:
+            entry = getDateEntryFromNode(childDiv);
+            if (entry) {
+              entries.push(entry);
+            }
+            break;
+          case jsControllers.TIME:
+            entry = getTimeEntryFromNode(childDiv);
+            if (entry) {
+              entries.push(entry);
+            }
+            break;
+          case jsControllers.DROPDOWN:
+            entry = getDropdownEntryFromNode(childDiv);
+            if (entry) {
+              entries.push(entry);
+            }
+            break;
         }
-      });
-      const textAreaInputs = findAll((elem) => {
-        return commonBool(elem, true);
-      }, dom);
-      textAreaInputs.forEach((textAreaInput) => {
-        entries.push({ type: "textarea", entry: (textAreaInput.attribs.name ?? "").replace("entry.", "") });
-      });
+      }
     }
   });
   const parseTwo = new Parser(handler);
   parseTwo.write(html);
   parseTwo.end();
-  console.log(entries);
+  // console.log(JSON.stringify(entries, null, 4));
   return entries;
 };
 
@@ -169,23 +364,69 @@ ${tabs(3)}},\n`;
 
   for (let i = 0; i < entries.length; i++) {
     if (entries[i].type === "text") {
-      finalString += `${tabs(3)}<label htmlFor="${ids[i]}">${entries[i].values[0].text}</label>\n`;
+      finalString += `${tabs(3)}<label htmlFor="${ids[i]}">${entries[i].question}</label>\n`;
       finalString += `${tabs(3)}<input type="text" id="${ids[i]}" />\n`;
     }
     if (entries[i].type === "radio") {
       finalString += `${tabs(3)}<div id="${ids[i]}">\n`;
+      finalString += `${tabs(4)}<span>${entries[i].question}</span>\n`;
       for (let j = 0; j < entries[i].values?.length; j++) {
         const newId = nanoId(5);
+        finalString += `${tabs(4)}<label htmlFor="${newId}">${entries[i].values[j].text}</label>\n`;
         finalString += `${tabs(4)}<input type="radio" name="${ids[i]}" id="${newId}" value="${
           entries[i].values[j].value
         }" />\n`;
-        finalString += `${tabs(4)}<label htmlFor="${newId}">${entries[i].values[j].text}</label>\n`;
       }
       finalString += `${tabs(3)}</div>\n`;
     }
     if (entries[i].type === "textarea") {
-      finalString += `${tabs(3)}<label htmlFor="${ids[i]}"/>\n`;
-      finalString += `${tabs(3)}<textarea id="${ids[i]}"/>\n`;
+      finalString += `${tabs(3)}<label htmlFor="${ids[i]}">\n`;
+      finalString += `${tabs(4)}${entries[i].question}\n`;
+      finalString += `${tabs(3)}</label>\n`;
+      finalString += `${tabs(3)}<textarea id="${ids[i]}">\n`;
+      finalString += `${tabs(3)}</textarea>\n`;
+    }
+    if (entries[i].type === "checkbox") {
+      finalString += `${tabs(3)}<div id="${ids[i]}">\n`;
+      finalString += `${tabs(4)}<span>${entries[i].question}</span>\n`;
+      for (let j = 0; j < entries[i].values?.length; j++) {
+        const newId = nanoId(5);
+        finalString += `${tabs(4)}<label htmlFor="${newId}">${entries[i].values[j].text}</label>\n`;
+        finalString += `${tabs(4)}<input type="checkbox" name="${ids[i]}" id="${newId}" value="${
+          entries[i].values[j].value
+        }" />\n`;
+      }
+      finalString += `${tabs(3)}</div>\n`;
+    }
+    if (entries[i].type === "date") {
+      finalString += `${tabs(3)}<div id="${ids[i]}">\n`;
+      finalString += `${tabs(4)}<span>${entries[i].question}</span>\n`;
+      for (let j = 0; j < entries[i].dateParts?.length; j++) {
+        const newId = nanoId(5);
+        finalString += `${tabs(4)}<label htmlFor="${newId}">${entries[i].dateParts[j]}</label>\n`;
+        finalString += `${tabs(4)}<input type="number" name="${entries[i].dateParts[j]}" id="${newId}" />\n`;
+      }
+      finalString += `${tabs(3)}</div>\n`;
+    }
+    if (entries[i].type === "time") {
+      finalString += `${tabs(3)}<div id="${ids[i]}">\n`;
+      finalString += `${tabs(4)}<span>${entries[i].question}</span>\n`;
+      for (let j = 0; j < entries[i].timeParts?.length; j++) {
+        const newId = nanoId(5);
+        finalString += `${tabs(4)}<label htmlFor="${newId}">${entries[i].timeParts[j]}</label>\n`;
+        finalString += `${tabs(4)}<input type="number" name="${ids[i]}" id="${newId}" />\n`;
+      }
+      finalString += `${tabs(3)}</div>\n`;
+    }
+    if (entries[i].type === "dropdown") {
+      finalString += `${tabs(3)}<label htmlFor="${ids[i]}">${entries[i].question}</label>\n`;
+      finalString += `${tabs(3)}<select id="${ids[i]}">\n`;
+      for (let j = 0; j < entries[i].values?.length; j++) {
+        finalString += `${tabs(4)}<option value="${entries[i].values[j].value}">${
+          entries[i].values[j].text
+        }</option>\n`;
+      }
+      finalString += `${tabs(3)}</select>\n`;
     }
   }
 

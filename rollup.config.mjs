@@ -18,7 +18,7 @@ const themeConfig = {
     cjs({
       include: /node_modules/gm
     }),
-    typescript({ tsconfig: "./tsconfig.json" }),
+    typescript({ tsconfig: "./tsconfig.json", sourceMap: false }),
     terser()
   ]
 };

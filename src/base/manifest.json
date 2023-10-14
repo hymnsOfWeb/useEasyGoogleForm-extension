@@ -1,7 +1,7 @@
 {
   "name": "easy google form code helper",
   "description": "A code writing helper for @hymns-of-web/useEasyGoogleForm hook. It scrapes your pre-filled google form.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "manifest_version": 3,
   "content_scripts": [
     {
