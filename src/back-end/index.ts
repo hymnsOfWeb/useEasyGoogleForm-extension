@@ -431,7 +431,7 @@ ${tabs(3)}},\n`;
       finalString += `${tabs(3)}</select>\n`;
     }
   }
-
+  finalString += `${tabs(3)}<button type="submit">Submit</button>\n`;
   finalString += `${tabs(2)}</form>\n`;
   finalString += `${tabs(1)})\n`;
   finalString += `}`;
