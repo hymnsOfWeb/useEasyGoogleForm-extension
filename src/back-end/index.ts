@@ -1,7 +1,6 @@
 import { findAll, findOne } from "domutils";
 import { Parser, DomHandler } from "htmlparser2";
 import { customAlphabet } from "nanoid/non-secure";
-// import { myHTML } from "./html";
 import { Element as DOMHandlerElement } from "domhandler";
 
 interface EntryType {
